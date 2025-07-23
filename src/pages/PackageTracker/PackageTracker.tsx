@@ -17,6 +17,13 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 const MOCK_PACKAGES = [
   {
@@ -59,6 +66,7 @@ const PackageTracker: React.FC = () => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("active");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [mapLocation, setMapLocation] = useState<string | null>(null);
 
   const filteredPackages = MOCK_PACKAGES.filter((pkg) => {
     const matchesSearch = pkg.id.toLowerCase().includes(search.toLowerCase());
@@ -68,6 +76,12 @@ const PackageTracker: React.FC = () => {
   });
 
   const hasStuck = MOCK_PACKAGES.some((pkg) => pkg.status === "STUCK!");
+
+  // Helper to parse lat/lng
+  const getLatLng = (loc: string) => {
+    const [lat, lng] = loc.split(",").map(Number);
+    return { lat, lng };
+  };
 
   return (
     <div className=" mt-8">
@@ -144,7 +158,17 @@ const PackageTracker: React.FC = () => {
                     </span>
                   </TableCell>
                   <TableCell>{pkg.lastSeen}</TableCell>
-                  <TableCell>{pkg.location}</TableCell>
+                  <TableCell>
+                    <button
+                      className="underline text-blue-700 hover:text-blue-900"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMapLocation(pkg.location);
+                      }}
+                    >
+                      {pkg.location}
+                    </button>
+                  </TableCell>
                 </motion.tr>
                 <AnimatePresence>
                   {expanded === pkg.id && (
@@ -163,8 +187,16 @@ const PackageTracker: React.FC = () => {
                             ))}
                           </ul>
                           <div className="mt-2">
-                            <span className="font-semibold">Map Pin:</span>{" "}
-                            {pkg.location}
+                            <span className="font-semibold">Map Pin:</span>
+                            <button
+                              className="underline text-blue-700 hover:text-blue-900"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMapLocation(pkg.location);
+                              }}
+                            >
+                              {pkg.location}
+                            </button>
                           </div>
                         </div>
                       </TableCell>
@@ -176,6 +208,42 @@ const PackageTracker: React.FC = () => {
           </TableBody>
         </Table>
       </Card>
+      <Dialog open={!!mapLocation} onOpenChange={() => setMapLocation(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Package Location</DialogTitle>
+          </DialogHeader>
+          {mapLocation &&
+            (() => {
+              const { lat, lng } = getLatLng(mapLocation);
+              return (
+                <div className="w-full h-72">
+                  <iframe
+                    title="Map"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    allowFullScreen
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${
+                      lng - 0.01
+                    }%2C${lat - 0.01}%2C${lng + 0.01}%2C${
+                      lat + 0.01
+                    }&layer=mapnik&marker=${lat}%2C${lng}`}
+                  />
+                  <div className="text-xs text-center mt-2">
+                    Lat: {lat}, Lng: {lng}
+                  </div>
+                </div>
+              );
+            })()}
+          <DialogClose asChild>
+            <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded">
+              Close
+            </button>
+          </DialogClose>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
