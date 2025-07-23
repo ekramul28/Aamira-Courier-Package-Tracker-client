@@ -6,6 +6,45 @@ import { io, Socket } from "socket.io-client";
 
 const SOCKET_URL = "http://localhost:5000"; // Change to your backend URL
 
+// LiveLocation component
+const LiveLocation: React.FC<{ socket: Socket | null }> = ({ socket }) => {
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        // Send location to server
+        if (socket) {
+          socket.emit("locationUpdate", { latitude, longitude });
+        }
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 5000,
+      }
+    );
+
+    // Cleanup
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [socket]);
+
+  return (
+    <div className="p-4 text-center">
+      <h2 className="text-xl font-bold">📍 Sharing Live Location...</h2>
+    </div>
+  );
+};
+
 const Courier: React.FC = () => {
   const [status, setStatus] = useState("");
   const [location, setLocation] = useState("");
@@ -38,6 +77,7 @@ const Courier: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded shadow">
+      <LiveLocation socket={socket} />
       <h2 className="text-2xl font-bold mb-4">Courier Status Update</h2>
       <div className="mb-4">
         <label className="block mb-1 font-medium">Status</label>

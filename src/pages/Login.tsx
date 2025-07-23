@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import * as z from "zod";
+import React, { useState } from "react";
 
 const loginSchema = z.object({
   email: z.string({ required_error: "Email is required" }),
@@ -25,6 +26,7 @@ export default function LoginForm() {
   const [login] = useLoginMutation();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [loginError, setLoginError] = useState("");
 
   const {
     register,
@@ -36,6 +38,7 @@ export default function LoginForm() {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
+      setLoginError("");
       const res = await login(data).unwrap();
 
       if (res?.data?.accessToken) {
@@ -50,6 +53,7 @@ export default function LoginForm() {
         }
       }
     } catch (error) {
+      setLoginError("Login failed. Please check your credentials.");
       toast.error("Login failed. Please check your credentials.");
     }
   };
@@ -67,6 +71,11 @@ export default function LoginForm() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {loginError && (
+              <div className="text-center text-red-600 text-sm font-medium mb-2">
+                {loginError}
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input

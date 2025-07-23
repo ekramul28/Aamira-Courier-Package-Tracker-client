@@ -1,8 +1,9 @@
 import AdminProfile from "@/pages/Admin/AdminProfile";
 import AnnouncementManagement from "@/pages/Admin/AnnouncementManagement";
 import Courier from "@/pages/courier/Courier";
+import PackageTracker from "@/pages/PackageTracker/PackageTracker";
 
-import { Megaphone, Truck, User } from "lucide-react";
+import { MapPin, Megaphone, Truck, User } from "lucide-react";
 
 export const adminPaths = [
   {
@@ -16,6 +17,12 @@ export const adminPaths = [
     path: "courier",
     element: <Courier />,
     icon: <Truck className="w-5 h-5" />,
+  },
+  {
+    name: "Package Tracker",
+    path: "package-tracker",
+    element: <PackageTracker />,
+    icon: <MapPin className="w-5 h-5" />,
   },
 
   {
