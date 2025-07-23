@@ -4,7 +4,7 @@ import { io, Socket } from "socket.io-client";
 // You may need to adjust the import path for your Redux slice
 // import { updateCourierStatus } from "@/redux/features/courier/courierSlice";
 
-const SOCKET_URL = "http://localhost:4000"; // Change to your backend URL
+const SOCKET_URL = "http://localhost:5000"; // Change to your backend URL
 
 const Courier: React.FC = () => {
   const [status, setStatus] = useState("");
