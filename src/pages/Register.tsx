@@ -14,21 +14,29 @@ import { setUser } from "@/redux/features/auth/authSlice";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-const registerSchema = z
-  .object({
-    name: z.string().min(2, { message: "Name is required" }),
-    email: z.string().email({ message: "Invalid email address" }),
-    password: z
-      .string()
-      .min(6, { message: "Password must be at least 6 characters" }),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+const registerValidationSchema = z.object({
+  body: z
+    .object({
+      name: z
+        .string({ required_error: "Name is required" })
+        .min(2, { message: "Name is required" }),
+      email: z
+        .string({ required_error: "Email is required" })
+        .email({ message: "Invalid email address" }),
+      password: z
+        .string({ required_error: "Password is required" })
+        .min(6, { message: "Password must be at least 6 characters" }),
+      confirmPassword: z.string({
+        required_error: "Confirm Password is required",
+      }),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: "Passwords do not match",
+      path: ["confirmPassword"],
+    }),
+});
 
-type RegisterFormValues = z.infer<typeof registerSchema>;
+type RegisterFormValues = z.infer<typeof registerValidationSchema>;
 
 export default function RegisterForm() {
   const [register] = useRegisterMutation();
@@ -40,12 +48,12 @@ export default function RegisterForm() {
     handleSubmit,
     formState: { errors },
   } = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
+    resolver: zodResolver(registerValidationSchema),
   });
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
-      const { confirmPassword, ...registerData } = data;
+      const { confirmPassword, ...registerData } = data.body;
       const result = await register(registerData).unwrap();
 
       if (result?.data?.accessToken) {
@@ -73,17 +81,21 @@ export default function RegisterForm() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <Label htmlFor="name">Name</Label>
-              <Input id="name" {...registerField("name")} />
-              {errors.name && (
-                <p className="text-sm text-red-500">{errors.name.message}</p>
+              <Input id="name" {...registerField("body.name")} />
+              {errors.body?.name && (
+                <p className="text-sm text-red-500">
+                  {errors.body.name.message}
+                </p>
               )}
             </div>
 
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" {...registerField("email")} />
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
+              <Input id="email" type="email" {...registerField("body.email")} />
+              {errors.body?.email && (
+                <p className="text-sm text-red-500">
+                  {errors.body.email.message}
+                </p>
               )}
             </div>
 
@@ -92,11 +104,11 @@ export default function RegisterForm() {
               <Input
                 id="password"
                 type="password"
-                {...registerField("password")}
+                {...registerField("body.password")}
               />
-              {errors.password && (
+              {errors.body?.password && (
                 <p className="text-sm text-red-500">
-                  {errors.password.message}
+                  {errors.body.password.message}
                 </p>
               )}
             </div>
@@ -106,11 +118,11 @@ export default function RegisterForm() {
               <Input
                 id="confirmPassword"
                 type="password"
-                {...registerField("confirmPassword")}
+                {...registerField("body.confirmPassword")}
               />
-              {errors.confirmPassword && (
+              {errors.body?.confirmPassword && (
                 <p className="text-sm text-red-500">
-                  {errors.confirmPassword.message}
+                  {errors.body.confirmPassword.message}
                 </p>
               )}
             </div>

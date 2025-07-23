@@ -8,12 +8,12 @@ import { useAppDispatch } from "@/redux/hooks";
 import { verifyToken } from "@/utils/verifyToken";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import * as z from "zod";
 
 const loginSchema = z.object({
-  id: z.string().nonempty("ID is required"),
+  email: z.string({ required_error: "Email is required" }),
   password: z
     .string()
     .min(6, { message: "Password must be at least 6 characters" }),
@@ -44,7 +44,7 @@ export default function LoginForm() {
         toast.success("Login successful");
 
         if (res.data.needsPasswordChange) {
-          navigate(`/${user.role}/profile`);
+          navigate(`/`);
         } else {
           navigate(`/change-password`);
         }
@@ -68,14 +68,14 @@ export default function LoginForm() {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="id">User ID</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="id"
-                placeholder="Enter your ID (e.g., A-0001)"
-                {...register("id")}
+                id="email"
+                placeholder="Enter your Email"
+                {...register("email")}
               />
-              {errors.id && (
-                <p className="text-xs text-red-500">{errors.id.message}</p>
+              {errors.email && (
+                <p className="text-xs text-red-500">{errors.email.message}</p>
               )}
             </div>
 
@@ -107,7 +107,7 @@ export default function LoginForm() {
                   type="button"
                   variant="outline"
                   onClick={() =>
-                    onSubmit({ id: "A-0001", password: "Admin@123" })
+                    onSubmit({ email: "A-0001", password: "Admin@123" })
                   }
                 >
                   Login as Admin
@@ -115,7 +115,9 @@ export default function LoginForm() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => onSubmit({ id: "S-0001", password: "123456" })}
+                  onClick={() =>
+                    onSubmit({ email: "S-0001", password: "123456" })
+                  }
                 >
                   Login as Student
                 </Button>
@@ -123,7 +125,7 @@ export default function LoginForm() {
                   type="button"
                   variant="outline"
                   onClick={() =>
-                    onSubmit({ id: "F-0001", password: "Faculty@123" })
+                    onSubmit({ email: "F-0001", password: "Faculty@123" })
                   }
                 >
                   Login as Faculty
@@ -131,6 +133,17 @@ export default function LoginForm() {
               </div>
             </div>
           </form>
+          <div className="mt-4 text-center">
+            <span className="text-sm text-muted-foreground">
+              Don't have an account?{" "}
+            </span>
+            <Link
+              to="/register"
+              className="text-primary underline hover:text-primary/80"
+            >
+              Register
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
