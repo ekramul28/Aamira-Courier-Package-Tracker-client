@@ -34,7 +34,7 @@ import type { TPackage } from "@/types/package";
 import { toast } from "sonner";
 
 const statusOptions = [
-  { label: "All", value: "" },
+  { label: "All", value: "ALL" },
   { label: "Pending", value: "pending" },
   { label: "In Transit", value: "in_transit" },
   { label: "Delivered", value: "delivered" },
@@ -45,7 +45,7 @@ const statusOptions = [
 export default function PackageTracker() {
   const [filters, setFilters] = useState({
     search: "",
-    status: "",
+    status: "ALL",
     sender: "",
     recipient: "",
   });
@@ -62,7 +62,8 @@ export default function PackageTracker() {
     ];
     if (filters.search)
       params.push({ name: "searchTerm", value: filters.search });
-    if (filters.status) params.push({ name: "status", value: filters.status });
+    if (filters.status && filters.status !== "ALL")
+      params.push({ name: "status", value: filters.status });
     if (filters.sender) params.push({ name: "sender", value: filters.sender });
     if (filters.recipient)
       params.push({ name: "recipient", value: filters.recipient });
@@ -70,7 +71,9 @@ export default function PackageTracker() {
   }, [filters, page]);
 
   const { data: packagesData, isLoading } = useGetAllPackagesQuery(queryParams);
-  const packages: TPackage[] = packagesData?.data || [];
+  const packages: TPackage[] = Array.isArray(packagesData?.data)
+    ? packagesData.data
+    : [];
   const meta = packagesData?.meta || { total: 0 };
 
   const handleEdit = (pkg: TPackage) => {
@@ -91,7 +94,7 @@ export default function PackageTracker() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6">
       <Card>
         <CardHeader>
           <CardTitle>Package List</CardTitle>
@@ -142,7 +145,7 @@ export default function PackageTracker() {
               onClick={() =>
                 setFilters({
                   search: "",
-                  status: "",
+                  status: "ALL",
                   sender: "",
                   recipient: "",
                 })
@@ -166,7 +169,7 @@ export default function PackageTracker() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {packages.map((pkg: TPackage) => (
+                {packages?.map((pkg: TPackage) => (
                   <TableRow key={pkg.id}>
                     <TableCell>{pkg.id}</TableCell>
                     <TableCell>{pkg.sender}</TableCell>

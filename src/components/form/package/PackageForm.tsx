@@ -7,16 +7,67 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+export const packageStatusOptions = [
+  { label: "Created", value: "CREATED" },
+  { label: "Picked Up", value: "PICKED_UP" },
+  { label: "In Transit", value: "IN_TRANSIT" },
+  { label: "Out for Delivery", value: "OUT_FOR_DELIVERY" },
+  { label: "Delivered", value: "DELIVERED" },
+  { label: "Exception", value: "EXCEPTION" },
+  { label: "Cancelled", value: "CANCELLED" },
+];
 
 export const packageFormSchema = z.object({
-  sender: z.string().min(1, "Sender is required"),
-  recipient: z.string().min(1, "Recipient is required"),
-  origin: z.string().min(1, "Origin is required"),
-  destination: z.string().min(1, "Destination is required"),
-  weight: z.coerce.number().min(0.01, "Weight must be positive"),
+  packageId: z.string().min(1, "Package ID is required"),
+  status: z.enum([
+    "CREATED",
+    "PICKED_UP",
+    "IN_TRANSIT",
+    "OUT_FOR_DELIVERY",
+    "DELIVERED",
+    "EXCEPTION",
+    "CANCELLED",
+  ]),
+  lat: z
+    .preprocess((v) => {
+      if (v === "" || v === undefined) return undefined;
+      const n = Number(v);
+      return isNaN(n) ? undefined : n;
+    }, z.number().optional())
+    .refine((val) => val === undefined || typeof val === "number", {
+      message: "Latitude must be a number",
+    }),
+  lon: z
+    .preprocess((v) => {
+      if (v === "" || v === undefined) return undefined;
+      const n = Number(v);
+      return isNaN(n) ? undefined : n;
+    }, z.number().optional())
+    .refine((val) => val === undefined || typeof val === "number", {
+      message: "Longitude must be a number",
+    }),
+  note: z.string().optional(),
+  eta: z.string().optional(),
 });
 
-export type PackageFormValues = z.infer<typeof packageFormSchema>;
+export type PackageStatus =
+  | "CREATED"
+  | "PICKED_UP"
+  | "IN_TRANSIT"
+  | "OUT_FOR_DELIVERY"
+  | "DELIVERED"
+  | "EXCEPTION"
+  | "CANCELLED";
+
+export type IPackageFormValues = z.infer<typeof packageFormSchema>;
 
 const formVariants = {
   initial: { opacity: 0, y: 40 },
@@ -25,8 +76,8 @@ const formVariants = {
 };
 
 type PackageFormProps = {
-  initialValues?: Partial<PackageFormValues>;
-  onSubmit: (values: PackageFormValues) => void | Promise<void>;
+  initialValues?: Partial<IPackageFormValues>;
+  onSubmit: (values: IPackageFormValues) => void | Promise<void>;
   submitLabel?: string;
   isLoading?: boolean;
 };
@@ -40,10 +91,15 @@ export const PackageForm: React.FC<PackageFormProps> = ({
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
-  } = useForm<PackageFormValues>({
+  } = useForm<IPackageFormValues>({
     resolver: zodResolver(packageFormSchema),
-    defaultValues: initialValues,
+    defaultValues: {
+      status: initialValues.status ?? "CREATED",
+      ...initialValues,
+    },
   });
 
   return (
@@ -54,59 +110,77 @@ export const PackageForm: React.FC<PackageFormProps> = ({
       exit="exit"
       transition={{ duration: 0.4 }}
     >
-      <Card className="w-[350px] shadow-lg">
+      <Card className="w-[400px] shadow-lg">
         <CardHeader>
           <CardTitle>Package Details</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <Label htmlFor="sender">Sender</Label>
-              <Input id="sender" {...register("sender")} />
-              {errors.sender && (
+              <Label htmlFor="packageId">Package ID</Label>
+              <Input id="packageId" {...register("packageId")} />
+              {errors.packageId && (
                 <span className="text-red-500 text-xs">
-                  {errors.sender.message}
+                  {errors.packageId.message}
                 </span>
               )}
             </div>
             <div>
-              <Label htmlFor="recipient">Recipient</Label>
-              <Input id="recipient" {...register("recipient")} />
-              {errors.recipient && (
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={watch("status")}
+                onValueChange={(v) => setValue("status", v as PackageStatus)}
+              >
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {packageStatusOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.status && (
                 <span className="text-red-500 text-xs">
-                  {errors.recipient.message}
+                  {errors.status.message}
                 </span>
               )}
             </div>
             <div>
-              <Label htmlFor="origin">Origin</Label>
-              <Input id="origin" {...register("origin")} />
-              {errors.origin && (
+              <Label htmlFor="lat">Latitude</Label>
+              <Input id="lat" type="number" step="any" {...register("lat")} />
+              {errors.lat && (
                 <span className="text-red-500 text-xs">
-                  {errors.origin.message}
+                  {errors.lat.message}
                 </span>
               )}
             </div>
             <div>
-              <Label htmlFor="destination">Destination</Label>
-              <Input id="destination" {...register("destination")} />
-              {errors.destination && (
+              <Label htmlFor="lon">Longitude</Label>
+              <Input id="lon" type="number" step="any" {...register("lon")} />
+              {errors.lon && (
                 <span className="text-red-500 text-xs">
-                  {errors.destination.message}
+                  {errors.lon.message}
                 </span>
               )}
             </div>
             <div>
-              <Label htmlFor="weight">Weight (kg)</Label>
-              <Input
-                id="weight"
-                type="number"
-                step="0.01"
-                {...register("weight")}
-              />
-              {errors.weight && (
+              <Label htmlFor="note">Note</Label>
+              <Input id="note" {...register("note")} />
+              {errors.note && (
                 <span className="text-red-500 text-xs">
-                  {errors.weight.message}
+                  {errors.note.message}
+                </span>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="eta">ETA</Label>
+              <Input id="eta" type="datetime-local" {...register("eta")} />
+              {errors.eta && (
+                <span className="text-red-500 text-xs">
+                  {errors.eta.message}
                 </span>
               )}
             </div>

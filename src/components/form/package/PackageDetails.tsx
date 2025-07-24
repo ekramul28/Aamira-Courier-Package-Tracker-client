@@ -10,17 +10,23 @@ import {
   Clock,
   Weight,
   Hash,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import type { TPackage } from "@/types/package";
 
 interface PackageDetailsProps {
   packageData: TPackage | null;
   onClose: () => void;
+  onEdit?: (pkg: TPackage) => void;
+  onDelete?: (pkg: TPackage) => void;
 }
 
 export default function PackageDetails({
   packageData,
   onClose,
+  onEdit,
+  onDelete,
 }: PackageDetailsProps) {
   if (!packageData) {
     return (
@@ -57,6 +63,19 @@ export default function PackageDetails({
     });
   };
 
+  const handleEdit = () => {
+    if (onEdit) onEdit(packageData);
+  };
+
+  const handleDelete = () => {
+    if (
+      onDelete &&
+      window.confirm("Are you sure you want to delete this package?")
+    ) {
+      onDelete(packageData);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-start">
@@ -66,9 +85,31 @@ export default function PackageDetails({
             View complete information about this package
           </p>
         </div>
-        <Button variant="outline" onClick={onClose}>
-          Close
-        </Button>
+        <div className="flex gap-2">
+          {onEdit && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleEdit}
+              title="Edit"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {onDelete && (
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={handleDelete}
+              title="Delete"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
+        </div>
       </div>
 
       <Card>
