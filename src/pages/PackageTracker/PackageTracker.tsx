@@ -1,251 +1,218 @@
-import React, { useState } from "react";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import { Card } from "@/components/ui/card";
+import React, { useState, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
-  TableHeader,
-  TableRow,
-  TableHead,
   TableBody,
   TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import { motion, AnimatePresence } from "framer-motion";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogClose,
 } from "@/components/ui/dialog";
+import {
+  useGetAllPackagesQuery,
+  useUpdatePackageMutation,
+} from "@/redux/features/package/packageApi";
+import { PackageForm } from "@/components/form/package/PackageForm";
+import type { PackageFormValues } from "@/components/form/package/PackageForm";
+import type { TPackage } from "@/types/package";
+import { toast } from "sonner";
 
-const MOCK_PACKAGES = [
-  {
-    id: "PKG12345",
-    status: "IN_TRANSIT",
-    lastSeen: "12m ago",
-    location: "39.76,-86.16",
-    history: ["Picked up", "In transit"],
-  },
-  {
-    id: "PKG55510",
-    status: "OUT_FOR_DEL.",
-    lastSeen: "02m ago",
-    location: "39.78,-86.10",
-    history: ["Picked up", "In transit", "Out for delivery"],
-  },
-  {
-    id: "PKG90001",
-    status: "STUCK!",
-    lastSeen: "47m ago",
-    location: "39.70,-86.21",
-    history: ["Picked up", "In transit", "Stuck"],
-  },
-];
-
-const STATUS_FILTERS = [
-  { label: "Active", value: "active" },
-  { label: "Stuck", value: "stuck" },
+const statusOptions = [
+  { label: "All", value: "" },
+  { label: "Pending", value: "pending" },
+  { label: "In Transit", value: "in_transit" },
   { label: "Delivered", value: "delivered" },
+  { label: "Stuck", value: "stuck" },
+  { label: "Cancelled", value: "cancelled" },
 ];
 
-const getStatusColor = (status: string) => {
-  if (status === "STUCK!") return "bg-red-100 text-red-700";
-  if (status === "OUT_FOR_DEL.") return "bg-yellow-100 text-yellow-700";
-  if (status === "IN_TRANSIT") return "bg-blue-100 text-blue-700";
-  return "";
-};
-
-const PackageTracker: React.FC = () => {
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("active");
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [mapLocation, setMapLocation] = useState<string | null>(null);
-
-  const filteredPackages = MOCK_PACKAGES.filter((pkg) => {
-    const matchesSearch = pkg.id.toLowerCase().includes(search.toLowerCase());
-    if (filter === "active") return matchesSearch && pkg.status !== "STUCK!";
-    if (filter === "stuck") return matchesSearch && pkg.status === "STUCK!";
-    return matchesSearch;
+export default function PackageTracker() {
+  const [filters, setFilters] = useState({
+    search: "",
+    status: "",
+    sender: "",
+    recipient: "",
   });
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<TPackage | null>(null);
+  const [updatePackage, { isLoading: isUpdating }] = useUpdatePackageMutation();
 
-  const hasStuck = MOCK_PACKAGES.some((pkg) => pkg.status === "STUCK!");
+  const queryParams = useMemo(() => {
+    const params = [
+      { name: "page", value: page.toString() },
+      { name: "limit", value: limit.toString() },
+    ];
+    if (filters.search)
+      params.push({ name: "searchTerm", value: filters.search });
+    if (filters.status) params.push({ name: "status", value: filters.status });
+    if (filters.sender) params.push({ name: "sender", value: filters.sender });
+    if (filters.recipient)
+      params.push({ name: "recipient", value: filters.recipient });
+    return params;
+  }, [filters, page]);
 
-  // Helper to parse lat/lng
-  const getLatLng = (loc: string) => {
-    const [lat, lng] = loc.split(",").map(Number);
-    return { lat, lng };
+  const { data: packagesData, isLoading } = useGetAllPackagesQuery(queryParams);
+  const packages: TPackage[] = packagesData?.data || [];
+  const meta = packagesData?.meta || { total: 0 };
+
+  const handleEdit = (pkg: TPackage) => {
+    setSelectedPackage(pkg);
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdate = async (values: PackageFormValues) => {
+    if (!selectedPackage) return;
+    try {
+      await updatePackage({ id: selectedPackage.id, data: values }).unwrap();
+      toast.success("Package updated successfully");
+      setEditDialogOpen(false);
+      setSelectedPackage(null);
+    } catch (error) {
+      toast.error("Failed to update package");
+    }
   };
 
   return (
-    <div className=" mt-8">
-      <Card className="p-4 mb-4">
-        <h1 className="text-2xl font-bold mb-2">Aamira Package Tracker</h1>
-        <div className="flex gap-4 items-center mb-2">
-          <div className="flex-1">
+    <div className="p-6 max-w-6xl mx-auto">
+      <Card>
+        <CardHeader>
+          <CardTitle>Package List</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-4 mb-6">
             <Input
-              placeholder="Search by Package ID"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by sender, recipient, origin, destination..."
+              value={filters.search}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, search: e.target.value }))
+              }
+              className="max-w-xs"
+            />
+            <Select
+              value={filters.status}
+              onValueChange={(v) => setFilters((f) => ({ ...f, status: v }))}
+            >
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="Sender"
+              value={filters.sender}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, sender: e.target.value }))
+              }
+              className="max-w-xs"
+            />
+            <Input
+              placeholder="Recipient"
+              value={filters.recipient}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, recipient: e.target.value }))
+              }
+              className="max-w-xs"
+            />
+            <Button
+              variant="outline"
+              onClick={() =>
+                setFilters({
+                  search: "",
+                  status: "",
+                  sender: "",
+                  recipient: "",
+                })
+              }
+            >
+              Clear Filters
+            </Button>
+          </div>
+          <div className="rounded-md border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Sender</TableHead>
+                  <TableHead>Recipient</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Origin</TableHead>
+                  <TableHead>Destination</TableHead>
+                  <TableHead>Weight</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {packages.map((pkg: TPackage) => (
+                  <TableRow key={pkg.id}>
+                    <TableCell>{pkg.id}</TableCell>
+                    <TableCell>{pkg.sender}</TableCell>
+                    <TableCell>{pkg.recipient}</TableCell>
+                    <TableCell>{pkg.status}</TableCell>
+                    <TableCell>{pkg.origin}</TableCell>
+                    <TableCell>{pkg.destination}</TableCell>
+                    <TableCell>{pkg.weight}</TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEdit(pkg)}
+                      >
+                        Edit
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="mt-4 flex justify-center">
+            <Pagination
+              currentPage={page}
+              totalPages={Math.ceil(meta.total / limit) || 1}
+              onPageChange={setPage}
             />
           </div>
-          <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="Filter" />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_FILTERS.map((f) => (
-                <SelectItem key={f.value} value={f.value}>
-                  {f.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <hr />
-        {hasStuck && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-red-100 text-red-700 px-4 py-2 rounded mt-3 font-semibold shadow"
-          >
-            ⚠️ Alert: One or more packages appear to be stuck!
-          </motion.div>
-        )}
+        </CardContent>
       </Card>
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>#</TableHead>
-              <TableHead>Package ID</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Last Seen</TableHead>
-              <TableHead>Location</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredPackages.map((pkg, idx) => (
-              <React.Fragment key={pkg.id}>
-                <motion.tr
-                  layout
-                  className={`cursor-pointer ${
-                    pkg.status === "STUCK!" ? "bg-red-50" : "hover:bg-muted"
-                  }`}
-                  onClick={() =>
-                    setExpanded(expanded === pkg.id ? null : pkg.id)
-                  }
-                  initial={false}
-                  animate={{ scale: expanded === pkg.id ? 1.01 : 1 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                >
-                  <TableCell>{idx + 1}</TableCell>
-                  <TableCell>{pkg.id}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-bold ${getStatusColor(
-                        pkg.status
-                      )}`}
-                    >
-                      {pkg.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>{pkg.lastSeen}</TableCell>
-                  <TableCell>
-                    <button
-                      className="underline text-blue-700 hover:text-blue-900"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMapLocation(pkg.location);
-                      }}
-                    >
-                      {pkg.location}
-                    </button>
-                  </TableCell>
-                </motion.tr>
-                <AnimatePresence>
-                  {expanded === pkg.id && (
-                    <motion.tr
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="bg-muted"
-                    >
-                      <TableCell colSpan={5} className="p-4">
-                        <div className="flex flex-col gap-2">
-                          <div className="font-semibold">Package History:</div>
-                          <ul className="list-disc list-inside text-sm">
-                            {pkg.history.map((h, i) => (
-                              <li key={i}>{h}</li>
-                            ))}
-                          </ul>
-                          <div className="mt-2">
-                            <span className="font-semibold">Map Pin:</span>
-                            <button
-                              className="underline text-blue-700 hover:text-blue-900"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMapLocation(pkg.location);
-                              }}
-                            >
-                              {pkg.location}
-                            </button>
-                          </div>
-                        </div>
-                      </TableCell>
-                    </motion.tr>
-                  )}
-                </AnimatePresence>
-              </React.Fragment>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
-      <Dialog open={!!mapLocation} onOpenChange={() => setMapLocation(null)}>
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Package Location</DialogTitle>
+            <DialogTitle>Edit Package</DialogTitle>
           </DialogHeader>
-          {mapLocation &&
-            (() => {
-              const { lat, lng } = getLatLng(mapLocation);
-              return (
-                <div className="w-full h-72">
-                  <iframe
-                    title="Map"
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    loading="lazy"
-                    allowFullScreen
-                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${
-                      lng - 0.01
-                    }%2C${lat - 0.01}%2C${lng + 0.01}%2C${
-                      lat + 0.01
-                    }&layer=mapnik&marker=${lat}%2C${lng}`}
-                  />
-                  <div className="text-xs text-center mt-2">
-                    Lat: {lat}, Lng: {lng}
-                  </div>
-                </div>
-              );
-            })()}
-          <DialogClose asChild>
-            <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded">
-              Close
-            </button>
-          </DialogClose>
+          {selectedPackage && (
+            <PackageForm
+              initialValues={selectedPackage}
+              onSubmit={handleUpdate}
+              submitLabel="Update Package"
+              isLoading={isUpdating}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
   );
-};
-
-export default PackageTracker;
+}
