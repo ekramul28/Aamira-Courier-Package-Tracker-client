@@ -16,6 +16,7 @@ import { studentPaths } from "./student.routes";
 import { NotFoundPage } from "@/pages/NotFound";
 
 import { facultyPaths } from "./faculty.routes";
+import Home from "@/pages/Home/Home";
 
 const router = createBrowserRouter([
   {
@@ -26,10 +27,10 @@ const router = createBrowserRouter([
       </ThemeProvider>
     ),
     children: [
-      // {
-      //   index: true,
-      //   element: <Home />,
-      // },
+      {
+        index: true,
+        element: <Home />,
+      },
 
       {
         path: "login",
