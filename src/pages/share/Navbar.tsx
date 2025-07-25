@@ -9,17 +9,12 @@ import {
 import { logout, selectCurrentUser } from "@/redux/features/auth/authSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { motion } from "framer-motion";
-import { Menu, Moon, Sun, User } from "lucide-react";
+import { Menu, Moon, Sun, Truck, User } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const getNavLinks = (role?: string) => {
-  const commonLinks = [
-    { label: "Home", to: "/" },
-    { label: "Courses", to: "/courses" },
-    { label: "Jobs", to: "/jobs" },
-    { label: "Blogs", to: "/blogs" },
-  ];
+  const commonLinks = [{ label: "Home", to: "/" }];
 
   switch (role) {
     case "student":
@@ -38,12 +33,7 @@ const getNavLinks = (role?: string) => {
       ];
     case "admin":
     case "superAdmin":
-      return [
-        ...commonLinks,
-        { label: "Dashboard", to: "/admin/dashboard" },
-        { label: "Students", to: "/students" },
-        { label: "faculty", to: "/faculty" },
-      ];
+      return [...commonLinks, { label: "Dashboard", to: "/admin/dashboard" }];
     default:
       return commonLinks;
   }
@@ -83,7 +73,10 @@ export default function NavBar() {
               to="/"
               className="text-2xl font-extrabold tracking-wide text-[#3F4555] dark:text-blue-400 hover:text-blue-600 transition-colors duration-300 flex items-center gap-1"
             >
-              <span>📚</span> AcademicMS
+              <span>
+                <Truck className="w-10 h-10" />
+              </span>{" "}
+              Aamira Courier
             </Link>
           </motion.div>
 

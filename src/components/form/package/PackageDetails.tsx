@@ -223,11 +223,14 @@ export default function PackageDetails({
           <CardContent>
             {coordinatesValid ? (
               <div className="h-96 rounded-lg overflow-hidden">
-                <Map
-                  center={[lat, lng]}
-                  markers={[{ lat, lng, title: packageData.orderer_name }]}
-                  zoom={14}
-                />
+                <iframe
+                  width="100%"
+                  height="400"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  src={`https://maps.google.com/maps?q=${packageData.lat},${packageData.lon}&z=15&output=embed`}
+                ></iframe>
               </div>
             ) : (
               <div className="h-64 bg-gray-100 rounded-lg flex flex-col items-center justify-center gap-2">
