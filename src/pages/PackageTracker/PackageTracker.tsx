@@ -29,9 +29,10 @@ import {
   useUpdatePackageMutation,
 } from "@/redux/features/package/packageApi";
 import { PackageForm } from "@/components/form/package/PackageForm";
-import type { PackageFormValues } from "@/components/form/package/PackageForm";
+import type { IPackageFormValues } from "@/components/form/package/PackageForm";
 import type { TPackage } from "@/types/package";
 import { toast } from "sonner";
+import { usePackageSocket } from "@/hooks/usePackageSocket";
 
 const statusOptions = [
   { label: "All", value: "ALL" },
@@ -74,14 +75,17 @@ export default function PackageTracker() {
   const packages: TPackage[] = Array.isArray(packagesData?.data)
     ? packagesData.data
     : [];
+  console.log(packages);
   const meta = packagesData?.meta || { total: 0 };
+
+  usePackageSocket();
 
   const handleEdit = (pkg: TPackage) => {
     setSelectedPackage(pkg);
     setEditDialogOpen(true);
   };
 
-  const handleUpdate = async (values: PackageFormValues) => {
+  const handleUpdate = async (values: IPackageFormValues) => {
     if (!selectedPackage) return;
     try {
       await updatePackage({ id: selectedPackage.id, data: values }).unwrap();
@@ -208,7 +212,7 @@ export default function PackageTracker() {
           </DialogHeader>
           {selectedPackage && (
             <PackageForm
-              initialValues={selectedPackage}
+              initialValues={selectedPackage as Partial<IPackageFormValues>}
               onSubmit={handleUpdate}
               submitLabel="Update Package"
               isLoading={isUpdating}

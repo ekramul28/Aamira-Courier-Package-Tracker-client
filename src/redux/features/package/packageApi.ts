@@ -24,8 +24,9 @@ export const packageApi = baseApi.injectEndpoints({
       },
       providesTags: ["packages"],
       transformResponse: (response: TResponseRedux<TPackage[]>) => {
+        console.log("inredux", response);
         return {
-          data: response.data ?? [],
+          data: response.data?.data ?? [],
           meta: response.meta ?? {},
         };
       },

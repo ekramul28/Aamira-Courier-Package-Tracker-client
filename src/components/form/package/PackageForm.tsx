@@ -7,13 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export const packageStatusOptions = [
   { label: "Created", value: "CREATED" },
@@ -26,36 +19,9 @@ export const packageStatusOptions = [
 ];
 
 export const packageFormSchema = z.object({
-  packageId: z.string().min(1, "Package ID is required"),
-  status: z.enum([
-    "CREATED",
-    "PICKED_UP",
-    "IN_TRANSIT",
-    "OUT_FOR_DELIVERY",
-    "DELIVERED",
-    "EXCEPTION",
-    "CANCELLED",
-  ]),
-  lat: z
-    .preprocess((v) => {
-      if (v === "" || v === undefined) return undefined;
-      const n = Number(v);
-      return isNaN(n) ? undefined : n;
-    }, z.number().optional())
-    .refine((val) => val === undefined || typeof val === "number", {
-      message: "Latitude must be a number",
-    }),
-  lon: z
-    .preprocess((v) => {
-      if (v === "" || v === undefined) return undefined;
-      const n = Number(v);
-      return isNaN(n) ? undefined : n;
-    }, z.number().optional())
-    .refine((val) => val === undefined || typeof val === "number", {
-      message: "Longitude must be a number",
-    }),
-  note: z.string().optional(),
-  eta: z.string().optional(),
+  orderer_name: z.string().min(1, "Orderer name is required"),
+  home_address: z.string().min(1, "Home address is required"),
+  phone_number: z.string().min(1, "Phone number is required"),
 });
 
 export type PackageStatus =
@@ -91,13 +57,10 @@ export const PackageForm: React.FC<PackageFormProps> = ({
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
     formState: { errors },
   } = useForm<IPackageFormValues>({
     resolver: zodResolver(packageFormSchema),
     defaultValues: {
-      status: initialValues.status ?? "CREATED",
       ...initialValues,
     },
   });
@@ -112,75 +75,38 @@ export const PackageForm: React.FC<PackageFormProps> = ({
     >
       <Card className="w-[400px] shadow-lg">
         <CardHeader>
-          <CardTitle>Package Details</CardTitle>
+          <CardTitle>Orderer Details</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <Label htmlFor="packageId">Package ID</Label>
-              <Input id="packageId" {...register("packageId")} />
-              {errors.packageId && (
+              <Label htmlFor="orderer_name">Orderer Name</Label>
+              <Input id="orderer_name" {...register("orderer_name")} />
+              {errors.orderer_name && (
                 <span className="text-red-500 text-xs">
-                  {errors.packageId.message}
+                  {errors.orderer_name.message}
                 </span>
               )}
             </div>
             <div>
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={watch("status")}
-                onValueChange={(v) => setValue("status", v as PackageStatus)}
-              >
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {packageStatusOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.status && (
+              <Label htmlFor="home_address">Home Address</Label>
+              <Input id="home_address" {...register("home_address")} />
+              {errors.home_address && (
                 <span className="text-red-500 text-xs">
-                  {errors.status.message}
+                  {errors.home_address.message}
                 </span>
               )}
             </div>
             <div>
-              <Label htmlFor="lat">Latitude</Label>
-              <Input id="lat" type="number" step="any" {...register("lat")} />
-              {errors.lat && (
+              <Label htmlFor="phone_number">Phone Number</Label>
+              <Input
+                id="phone_number"
+                type="phone_number"
+                {...register("phone_number")}
+              />
+              {errors.phone_number && (
                 <span className="text-red-500 text-xs">
-                  {errors.lat.message}
-                </span>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="lon">Longitude</Label>
-              <Input id="lon" type="number" step="any" {...register("lon")} />
-              {errors.lon && (
-                <span className="text-red-500 text-xs">
-                  {errors.lon.message}
-                </span>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="note">Note</Label>
-              <Input id="note" {...register("note")} />
-              {errors.note && (
-                <span className="text-red-500 text-xs">
-                  {errors.note.message}
-                </span>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="eta">ETA</Label>
-              <Input id="eta" type="datetime-local" {...register("eta")} />
-              {errors.eta && (
-                <span className="text-red-500 text-xs">
-                  {errors.eta.message}
+                  {errors.phone_number.message}
                 </span>
               )}
             </div>

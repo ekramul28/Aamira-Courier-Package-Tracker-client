@@ -11,6 +11,12 @@ import { toast } from "sonner";
 import { logout, setUser } from "../features/auth/authSlice";
 import type { RootState } from "../store";
 
+// Utility to get the current auth token from the Redux store
+import { store } from "../store";
+export function getAuthToken() {
+  return (store.getState() as RootState).auth.token;
+}
+
 const baseQuery = fetchBaseQuery({
   baseUrl: "http://localhost:5000/api/v1",
   // baseUrl: "https://academic-management-one.vercel.app/api/v1",

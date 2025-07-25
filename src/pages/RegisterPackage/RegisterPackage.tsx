@@ -13,7 +13,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   PackageForm,
   type IPackageFormValues,
-  packageStatusOptions,
 } from "@/components/form/package/PackageForm";
 import type { TPackage } from "@/types/package";
 import PackageDetails from "@/components/form/package/PackageDetails";
@@ -33,25 +32,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { usePackageSocket } from "@/hooks/usePackageSocket";
 
 const socket = io("http://localhost:5000"); // Adjust if your backend runs elsewhere
-
-const mapStatusToForm = (status: string): IPackageFormValues["status"] => {
-  switch (status) {
-    case "pending":
-      return "CREATED";
-    case "in_transit":
-      return "IN_TRANSIT";
-    case "delivered":
-      return "DELIVERED";
-    case "stuck":
-      return "EXCEPTION";
-    case "cancelled":
-      return "CANCELLED";
-    default:
-      return "CREATED";
-  }
-};
 
 export default function RegisterPackage() {
   const [createPackage, { isLoading }] = useCreatePackageMutation();
@@ -63,18 +46,26 @@ export default function RegisterPackage() {
   const [selectedPackage, setSelectedPackage] = useState<TPackage | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Add these state variables for modals
+  const [editModalPackage, setEditModalPackage] = useState<TPackage | null>(
+    null
+  );
+  const [deleteModalPackage, setDeleteModalPackage] = useState<TPackage | null>(
+    null
+  );
+
   // Search/filter state
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  // const [statusFilter, setStatusFilter] = useState("ALL"); // Removed status filter
 
   // Query params for package list
   const queryParams = useMemo(() => {
     const params = [];
     if (search) params.push({ name: "searchTerm", value: search });
-    if (statusFilter && statusFilter !== "ALL")
-      params.push({ name: "status", value: statusFilter });
+    // if (statusFilter && statusFilter !== "ALL") // Removed status filter
+    //   params.push({ name: "status", value: statusFilter });
     return params;
-  }, [search, statusFilter]);
+  }, [search]); // Removed statusFilter from dependency array
 
   const { data: packagesData, isLoading: isLoadingPackages } =
     useGetAllPackagesQuery(queryParams);
@@ -82,12 +73,14 @@ export default function RegisterPackage() {
     ? packagesData.data
     : [];
 
+  usePackageSocket();
+
   // Handlers
   const handleCreate = async (data: IPackageFormValues) => {
+    console.log("data", data);
     try {
       const result = await createPackage({
         ...data,
-        status: data.status || "CREATED",
       }).unwrap();
       toast.success("Package registered successfully!");
       socket.emit("package_registered", result);
@@ -154,12 +147,9 @@ export default function RegisterPackage() {
       <div className="flex flex-col items-center min-h-screen bg-gray-50 dark:bg-background p-4">
         <PackageForm
           initialValues={{
-            packageId: selectedPackage.packageId ?? selectedPackage.id ?? "",
-            status: mapStatusToForm(selectedPackage.status),
-            lat: selectedPackage.lat,
-            lon: selectedPackage.lon,
-            note: selectedPackage.note,
-            eta: selectedPackage.eta,
+            orderer_name: selectedPackage.orderer_name,
+            home_address: selectedPackage.home_address,
+            phone_number: selectedPackage.phone_number,
           }}
           onSubmit={handleUpdate}
           submitLabel="Update Package"
@@ -200,29 +190,17 @@ export default function RegisterPackage() {
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
             <Input
-              placeholder="Search by Package ID..."
+              placeholder="Search by Orderer Name..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-xs"
             />
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Statuses</SelectItem>
-                {packageStatusOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
             <Button
               variant="outline"
               onClick={() => {
                 setSearch("");
-                setStatusFilter("ALL");
+                // setStatusFilter("ALL"); // Removed status filter
               }}
             >
               Clear Filters
@@ -244,39 +222,75 @@ export default function RegisterPackage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Package ID</TableHead>
+                  <TableHead>Orderer Name</TableHead>
+                  <TableHead>Home Address</TableHead>
+                  <TableHead>Phone Number</TableHead>
                   <TableHead>Status</TableHead>
+
+                  <TableHead>ETA</TableHead>
+                  <TableHead>Event Timestamp</TableHead>
                   <TableHead>Latitude</TableHead>
                   <TableHead>Longitude</TableHead>
                   <TableHead>Note</TableHead>
-                  <TableHead>ETA</TableHead>
+                  <TableHead>Received At</TableHead>
+
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoadingPackages ? (
                   <TableRow>
-                    <TableCell colSpan={6}>Loading...</TableCell>
+                    <TableCell colSpan={15}>Loading...</TableCell>
                   </TableRow>
                 ) : packages.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6}>No packages found.</TableCell>
+                    <TableCell colSpan={15}>No packages found.</TableCell>
                   </TableRow>
                 ) : (
                   packages?.map((pkg) => (
                     <TableRow
-                      key={pkg.id}
-                      className="cursor-pointer hover:bg-muted"
-                      onClick={() => {
-                        setSelectedPackage(pkg);
-                        setMode("details");
-                      }}
+                      key={pkg.id || pkg._id}
+                      className="hover:bg-muted"
                     >
-                      <TableCell>{pkg.packageId ?? pkg.id}</TableCell>
+                      <TableCell>{pkg.packageId}</TableCell>
+                      <TableCell>{pkg.orderer_name}</TableCell>
+                      <TableCell>{pkg.home_address}</TableCell>
+                      <TableCell>{pkg.phone_number}</TableCell>
                       <TableCell>{pkg.status}</TableCell>
-                      <TableCell>{pkg.lat ?? "-"}</TableCell>
-                      <TableCell>{pkg.lon ?? "-"}</TableCell>
-                      <TableCell>{pkg.note ?? "-"}</TableCell>
+
                       <TableCell>
-                        {pkg.eta ? new Date(pkg.eta).toLocaleString() : "-"}
+                        {pkg.eta ? new Date(pkg.eta).toLocaleString() : ""}
+                      </TableCell>
+                      <TableCell>
+                        {pkg.eventTimestamp
+                          ? new Date(pkg.eventTimestamp).toLocaleString()
+                          : ""}
+                      </TableCell>
+                      <TableCell>{pkg.lat}</TableCell>
+                      <TableCell>{pkg.lon}</TableCell>
+                      <TableCell>{pkg.note}</TableCell>
+                      <TableCell>
+                        {pkg.receivedAt
+                          ? new Date(pkg.receivedAt).toLocaleString()
+                          : ""}
+                      </TableCell>
+
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditModalPackage(pkg)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="ml-2"
+                          onClick={() => setDeleteModalPackage(pkg)}
+                        >
+                          Delete
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
@@ -301,6 +315,68 @@ export default function RegisterPackage() {
               submitLabel="Register Package"
               isLoading={isLoading}
             />
+          </div>
+        </div>
+      )}
+      {/* Edit Package Modal */}
+      {editModalPackage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-background rounded-lg shadow-lg p-6 w-full max-w-md relative">
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              onClick={() => setEditModalPackage(null)}
+            >
+              &times;
+            </button>
+            <PackageForm
+              initialValues={{
+                orderer_name: editModalPackage.orderer_name,
+                home_address: editModalPackage.home_address,
+                phone_number: editModalPackage.phone_number,
+              }}
+              onSubmit={async (data) => {
+                await handleUpdate.call(
+                  { selectedPackage: editModalPackage },
+                  data
+                );
+                setEditModalPackage(null);
+              }}
+              submitLabel="Update Package"
+              isLoading={isLoading}
+            />
+          </div>
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {deleteModalPackage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-background rounded-lg shadow-lg p-6 w-full max-w-md relative">
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              onClick={() => setDeleteModalPackage(null)}
+            >
+              &times;
+            </button>
+            <div className="mb-4">
+              Are you sure you want to delete this package?
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  await handleDelete(deleteModalPackage);
+                  setDeleteModalPackage(null);
+                }}
+              >
+                Delete
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteModalPackage(null)}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         </div>
       )}
