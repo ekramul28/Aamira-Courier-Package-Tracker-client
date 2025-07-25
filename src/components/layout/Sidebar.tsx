@@ -3,10 +3,10 @@ import { cn } from "@/lib/utils";
 import { type TUser, useCurrentToken } from "@/redux/features/auth/authSlice";
 import { useAppSelector } from "@/redux/hooks";
 import { verifyToken } from "@/utils/verifyToken";
-import { Home } from "lucide-react";
+import { Home, Truck } from "lucide-react";
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-
+import { motion } from "framer-motion";
 import { adminPaths } from "@/routes/admin.routes";
 import { facultyPaths } from "@/routes/faculty.routes";
 import { studentPaths } from "@/routes/student.routes";
@@ -32,9 +32,19 @@ const Sidebar: React.FC = () => {
       {/* Desktop Sidebar */}
       <aside className="w-64 h-screen overflow-auto border-r text-primary sticky top-0 hidden lg:flex flex-col justify-between">
         <div>
-          <div className="p-4 text-xl font-bold text-primary border-b">
-            AcademicMS
-          </div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Link
+              to="/"
+              className="text-2xl border-b-2 py-3 font-extrabold tracking-wide text-[#3F4555] dark:text-blue-400 hover:text-blue-600 transition-colors duration-300 flex items-center gap-1"
+            >
+              <div className="flex items-center gap-2 justify-center">
+                <span>
+                  <Truck className="w-10 h-10" />
+                </span>{" "}
+                Aamira Courier
+              </div>
+            </Link>
+          </motion.div>
           <ScrollArea className="flex-1 p-4">
             <nav className="flex flex-col gap-2">
               {sidebarItems.map((item: any) => (

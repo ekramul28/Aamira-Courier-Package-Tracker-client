@@ -33,7 +33,10 @@ const getNavLinks = (role?: string) => {
       ];
     case "admin":
     case "superAdmin":
-      return [...commonLinks, { label: "Dashboard", to: "/admin/dashboard" }];
+      return [
+        ...commonLinks,
+        { label: "Dashboard", to: "/admin/register-package" },
+      ];
     default:
       return commonLinks;
   }
