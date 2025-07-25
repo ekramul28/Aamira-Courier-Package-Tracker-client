@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { io } from "socket.io-client";
 import { toast } from "sonner";
 import {
@@ -18,13 +17,6 @@ import type { TPackage } from "@/types/package";
 import PackageDetails from "@/components/form/package/PackageDetails";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -32,40 +24,41 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { usePackageSocket } from "@/hooks/usePackageSocket";
 
-const socket = io("http://localhost:5000"); // Adjust if your backend runs elsewhere
+const socket = io("http://localhost:5000"); // Update if needed
 
 export default function RegisterPackage() {
   const [createPackage, { isLoading }] = useCreatePackageMutation();
   const [deletePackage] = useDeletePackageMutation();
   const [updatePackage] = useUpdatePackageMutation();
 
-  // Modes: list, add, details, edit
   const [mode, setMode] = useState<"list" | "add" | "details" | "edit">("list");
   const [selectedPackage, setSelectedPackage] = useState<TPackage | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-
-  // Add these state variables for modals
   const [editModalPackage, setEditModalPackage] = useState<TPackage | null>(
     null
   );
   const [deleteModalPackage, setDeleteModalPackage] = useState<TPackage | null>(
     null
   );
-
-  // Search/filter state
+  const [mapModalLocation, setMapModalLocation] = useState<{
+    lat: number;
+    lon: number;
+  } | null>(null);
   const [search, setSearch] = useState("");
-  // const [statusFilter, setStatusFilter] = useState("ALL"); // Removed status filter
 
-  // Query params for package list
   const queryParams = useMemo(() => {
     const params = [];
     if (search) params.push({ name: "searchTerm", value: search });
-    // if (statusFilter && statusFilter !== "ALL") // Removed status filter
-    //   params.push({ name: "status", value: statusFilter });
     return params;
-  }, [search]); // Removed statusFilter from dependency array
+  }, [search]);
 
   const { data: packagesData, isLoading: isLoadingPackages } =
     useGetAllPackagesQuery(queryParams);
@@ -75,19 +68,15 @@ export default function RegisterPackage() {
 
   usePackageSocket();
 
-  // Handlers
   const handleCreate = async (data: IPackageFormValues) => {
-    console.log("data", data);
     try {
-      const result = await createPackage({
-        ...data,
-      }).unwrap();
+      const result = await createPackage({ ...data }).unwrap();
       toast.success("Package registered successfully!");
       socket.emit("package_registered", result);
       setSelectedPackage(result);
       setShowAddModal(false);
       setMode("details");
-    } catch (error) {
+    } catch {
       toast.error("Failed to register package");
     }
   };
@@ -102,7 +91,7 @@ export default function RegisterPackage() {
       toast.success("Package updated successfully!");
       setSelectedPackage(result);
       setMode("details");
-    } catch (error) {
+    } catch {
       toast.error("Failed to update package");
     }
   };
@@ -112,17 +101,17 @@ export default function RegisterPackage() {
     if (!pkgToDelete) return;
     if (!window.confirm("Are you sure you want to delete this package?"))
       return;
+
     try {
       await deletePackage(pkgToDelete.id).unwrap();
       toast.success("Package deleted successfully!");
       setSelectedPackage(null);
       setMode("list");
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete package");
     }
   };
 
-  // Render modes
   if (mode === "add") {
     return (
       <div className="flex flex-col items-center min-h-screen bg-gray-50 dark:bg-background p-4">
@@ -179,11 +168,9 @@ export default function RegisterPackage() {
     );
   }
 
-  // Default: list mode
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-50 dark:bg-background p-4">
-      {/* Package List with Search/Filter */}
-      <Card className="w-full  mb-8">
+      <Card className="w-full mb-8">
         <CardHeader>
           <CardTitle>All Packages</CardTitle>
         </CardHeader>
@@ -195,17 +182,9 @@ export default function RegisterPackage() {
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-xs"
             />
-
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSearch("");
-                // setStatusFilter("ALL"); // Removed status filter
-              }}
-            >
+            <Button variant="outline" onClick={() => setSearch("")}>
               Clear Filters
             </Button>
-            {/* Add Package Button */}
             <div className="flex justify-end items-end">
               <Button
                 onClick={() => {
@@ -217,6 +196,7 @@ export default function RegisterPackage() {
               </Button>
             </div>
           </div>
+
           <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
@@ -226,14 +206,11 @@ export default function RegisterPackage() {
                   <TableHead>Home Address</TableHead>
                   <TableHead>Phone Number</TableHead>
                   <TableHead>Status</TableHead>
-
                   <TableHead>ETA</TableHead>
                   <TableHead>Event Timestamp</TableHead>
-                  <TableHead>Latitude</TableHead>
-                  <TableHead>Longitude</TableHead>
+                  <TableHead>Latitude Longitude</TableHead>
                   <TableHead>Note</TableHead>
                   <TableHead>Received At</TableHead>
-
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -247,17 +224,26 @@ export default function RegisterPackage() {
                     <TableCell colSpan={15}>No packages found.</TableCell>
                   </TableRow>
                 ) : (
-                  packages?.map((pkg) => (
+                  packages.map((pkg) => (
                     <TableRow
                       key={pkg.id || pkg._id}
                       className="hover:bg-muted"
                     >
-                      <TableCell>{pkg.packageId}</TableCell>
+                      <TableCell>
+                        <button
+                          onClick={() => {
+                            setSelectedPackage(pkg);
+                            setMode("details");
+                          }}
+                          className="text-blue-600 hover:underline cursor-pointer"
+                        >
+                          {pkg.packageId}
+                        </button>
+                      </TableCell>
                       <TableCell>{pkg.orderer_name}</TableCell>
                       <TableCell>{pkg.home_address}</TableCell>
                       <TableCell>{pkg.phone_number}</TableCell>
                       <TableCell>{pkg.status}</TableCell>
-
                       <TableCell>
                         {pkg.eta ? new Date(pkg.eta).toLocaleString() : ""}
                       </TableCell>
@@ -266,15 +252,38 @@ export default function RegisterPackage() {
                           ? new Date(pkg.eventTimestamp).toLocaleString()
                           : ""}
                       </TableCell>
-                      <TableCell>{pkg.lat}</TableCell>
-                      <TableCell>{pkg.lon}</TableCell>
-                      <TableCell>{pkg.note}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="link"
+                          onClick={() =>
+                            setMapModalLocation({ lat: pkg.lat, lon: pkg.lon })
+                          }
+                        >
+                          {pkg.lat} {pkg.lon}
+                        </Button>
+                      </TableCell>
+
+                      <TableCell>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="max-w-[200px] truncate cursor-help">
+                                {pkg?.note?.length > 20
+                                  ? `${pkg?.note?.slice(0, 20)}...`
+                                  : pkg.note}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs break-words">
+                              {pkg.note}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </TableCell>
                       <TableCell>
                         {pkg.receivedAt
                           ? new Date(pkg.receivedAt).toLocaleString()
                           : ""}
                       </TableCell>
-
                       <TableCell>
                         <Button
                           size="sm"
@@ -300,7 +309,8 @@ export default function RegisterPackage() {
           </div>
         </CardContent>
       </Card>
-      {/* Add Package Modal */}
+
+      {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white dark:bg-background rounded-lg shadow-lg p-6 w-full max-w-md relative">
@@ -318,7 +328,8 @@ export default function RegisterPackage() {
           </div>
         </div>
       )}
-      {/* Edit Package Modal */}
+
+      {/* Edit Modal */}
       {editModalPackage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white dark:bg-background rounded-lg shadow-lg p-6 w-full max-w-md relative">
@@ -347,7 +358,8 @@ export default function RegisterPackage() {
           </div>
         </div>
       )}
-      {/* Delete Confirmation Modal */}
+
+      {/* Delete Modal */}
       {deleteModalPackage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white dark:bg-background rounded-lg shadow-lg p-6 w-full max-w-md relative">
@@ -377,6 +389,29 @@ export default function RegisterPackage() {
                 Cancel
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Map Modal */}
+      {mapModalLocation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-background rounded-lg shadow-lg p-6 w-full max-w-2xl relative">
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              onClick={() => setMapModalLocation(null)}
+            >
+              &times;
+            </button>
+            <h2 className="mb-4 text-lg font-semibold">Location Map</h2>
+            <iframe
+              width="100%"
+              height="400"
+              style={{ border: 0 }}
+              loading="lazy"
+              allowFullScreen
+              src={`https://maps.google.com/maps?q=${mapModalLocation.lat},${mapModalLocation.lon}&z=15&output=embed`}
+            ></iframe>
           </div>
         </div>
       )}

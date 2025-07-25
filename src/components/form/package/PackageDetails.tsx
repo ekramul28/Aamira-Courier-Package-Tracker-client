@@ -1,20 +1,23 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+
 import {
   User,
   Package,
   MapPin,
   Calendar,
   Clock,
-  Weight,
-  Hash,
   Pencil,
   Trash2,
+  Phone,
+  StickyNote,
+  LocateFixed,
+  Home,
+  Timer,
+  CheckCircle,
 } from "lucide-react";
 import type { TPackage } from "@/types/package";
-
 interface PackageDetailsProps {
   packageData: TPackage | null;
   onClose: () => void;
@@ -37,7 +40,7 @@ export default function PackageDetails({
   }
 
   const statusToColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "pending":
         return "bg-yellow-100 text-yellow-700";
       case "in_transit":
@@ -53,7 +56,8 @@ export default function PackageDetails({
     }
   };
 
-  const formatDateTime = (dateString: string) => {
+  const formatDateTime = (dateString: string | null) => {
+    if (!dateString) return "N/A";
     return new Date(dateString).toLocaleString("en-US", {
       year: "numeric",
       month: "long",
@@ -75,6 +79,11 @@ export default function PackageDetails({
       onDelete(packageData);
     }
   };
+
+  // Parse coordinates, default to 0,0 if invalid
+  const lat = parseFloat(packageData.lat?.toString()) || 0;
+  const lng = parseFloat(packageData.lon?.toString()) || 0;
+  const coordinatesValid = lat !== 0 || lng !== 0;
 
   return (
     <div className="space-y-6">
@@ -112,87 +121,124 @@ export default function PackageDetails({
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Package className="h-5 w-5 text-muted-foreground" />
-                {packageData.id}
-              </CardTitle>
-              <div className="flex items-center gap-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Package details card */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Package className="h-5 w-5 text-muted-foreground" />
+                  {packageData.packageId || packageData.id}
+                </CardTitle>
                 <Badge className={statusToColor(packageData.status)}>
                   {packageData.status}
                 </Badge>
               </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Sender:</span>
-                <span className="text-muted-foreground">
-                  {packageData.sender}
-                </span>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Orderer Name:</span>
+                  <span className="text-muted-foreground">
+                    {packageData.orderer_name}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Phone:</span>
+                  <span className="text-muted-foreground">
+                    {packageData.phone_number}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Home className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Address:</span>
+                  <span className="text-muted-foreground">
+                    {packageData.home_address}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StickyNote className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Note:</span>
+                  <span className="text-muted-foreground">
+                    {packageData.note ?? "N/A"}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Recipient:</span>
-                <span className="text-muted-foreground">
-                  {packageData.recipient}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Origin:</span>
-                <span className="text-muted-foreground">
-                  {packageData.origin}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Destination:</span>
-                <span className="text-muted-foreground">
-                  {packageData.destination}
-                </span>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <LocateFixed className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Coordinates:</span>
+                  <span className="text-muted-foreground">
+                    {lat.toFixed(6)}, {lng.toFixed(6)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Created:</span>
+                  <span className="text-muted-foreground">
+                    {formatDateTime(packageData.createdAt)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Updated:</span>
+                  <span className="text-muted-foreground">
+                    {formatDateTime(packageData.updatedAt)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Timer className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">ETA:</span>
+                  <span className="text-muted-foreground">
+                    {formatDateTime(packageData.eta)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Received At:</span>
+                  <span className="text-muted-foreground">
+                    {formatDateTime(packageData.receivedAt)}
+                  </span>
+                </div>
               </div>
             </div>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Weight className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Weight:</span>
-                <span className="text-muted-foreground">
-                  {packageData.weight} kg
-                </span>
+          </CardContent>
+        </Card>
+
+        {/* Map card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-muted-foreground" />
+              Delivery Location
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {coordinatesValid ? (
+              <div className="h-96 rounded-lg overflow-hidden">
+                <Map
+                  center={[lat, lng]}
+                  markers={[{ lat, lng, title: packageData.orderer_name }]}
+                  zoom={14}
+                />
               </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Created:</span>
-                <span className="text-muted-foreground">
-                  {formatDateTime(packageData.createdAt)}
-                </span>
+            ) : (
+              <div className="h-64 bg-gray-100 rounded-lg flex flex-col items-center justify-center gap-2">
+                <MapPin className="h-8 w-8 text-gray-400" />
+                <p className="text-gray-500">No valid coordinates provided</p>
+                <p className="text-sm text-gray-400">(0, 0)</p>
               </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Updated:</span>
-                <span className="text-muted-foreground">
-                  {formatDateTime(packageData.updatedAt)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Hash className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Package ID:</span>
-                <span className="text-muted-foreground">{packageData.id}</span>
-              </div>
-            </div>
-          </div>
-          <Separator />
-          {/* Add more details here if needed */}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
