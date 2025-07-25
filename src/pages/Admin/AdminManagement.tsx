@@ -109,11 +109,7 @@ export default function AdminManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          <AdminList
-            onEdit={handleEdit}
-            admins={adminsData?.data || []}
-            isLoading={isLoading}
-          />
+          <AdminList onEdit={handleEdit} />
 
           {adminsData?.meta && (
             <div className="mt-4 flex justify-center">

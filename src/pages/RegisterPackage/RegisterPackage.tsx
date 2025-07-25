@@ -31,8 +31,26 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { usePackageSocket } from "@/hooks/usePackageSocket";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const socket = io("http://localhost:5000"); // Update if needed
+
+const statusOptions = [
+  { label: "All", value: "ALL" },
+  { label: "CREATED", value: "CREATED" },
+  { label: "PICKED_UP", value: "PICKED_UP" },
+  { label: "IN_TRANSIT", value: "IN_TRANSIT" },
+  { label: "OUT_FOR_DELIVERY", value: "OUT_FOR_DELIVERY" },
+  { label: "DELIVERED", value: "DELIVERED" },
+  { label: "EXCEPTION", value: "EXCEPTION" },
+  { label: "CANCELLED", value: "CANCELLED" },
+];
 
 export default function RegisterPackage() {
   const [createPackage, { isLoading }] = useCreatePackageMutation();
@@ -53,10 +71,15 @@ export default function RegisterPackage() {
     lon: number;
   } | null>(null);
   const [search, setSearch] = useState("");
-
+  const [filters, setFilters] = useState({
+    search: "",
+    status: "ALL",
+  });
   const queryParams = useMemo(() => {
     const params = [];
     if (search) params.push({ name: "searchTerm", value: search });
+    if (filters.status && filters.status !== "ALL")
+      params.push({ name: "status", value: filters.status });
     return params;
   }, [search]);
 
@@ -182,7 +205,30 @@ export default function RegisterPackage() {
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-xs"
             />
-            <Button variant="outline" onClick={() => setSearch("")}>
+
+            <Select
+              value={filters.status}
+              onValueChange={(v) => setFilters((f) => ({ ...f, status: v }))}
+            >
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearch("");
+                setFilters({ search: "", status: "ALL" });
+              }}
+            >
               Clear Filters
             </Button>
             <div className="flex justify-end items-end">

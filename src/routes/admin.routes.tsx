@@ -1,23 +1,12 @@
+import AdminManagement from "@/pages/Admin/AdminManagement";
 import AdminProfile from "@/pages/Admin/AdminProfile";
-import AnnouncementManagement from "@/pages/Admin/AnnouncementManagement";
+
 import Courier from "@/pages/courier/Courier";
+import CreateCourier from "@/pages/CreateCourier/CreateCourier";
 import RegisterPackage from "@/pages/RegisterPackage/RegisterPackage";
-import { Megaphone, Package, Truck, User } from "lucide-react";
+import { Package, Plus, Truck, User } from "lucide-react";
 
 export const adminPaths = [
-  {
-    name: "Profile",
-    path: "profile",
-    element: <AdminProfile />,
-    icon: <User className="w-5 h-5" />,
-  },
-  {
-    name: "Courier",
-    path: "courier",
-    element: <Courier />,
-    icon: <Truck className="w-5 h-5" />,
-  },
-
   {
     name: "Register Package",
     path: "register-package",
@@ -25,9 +14,27 @@ export const adminPaths = [
     icon: <Package className="w-5 h-5" />,
   },
   {
-    name: "Announce Management",
-    path: "announcement-management",
-    element: <AnnouncementManagement />,
-    icon: <Megaphone className="w-5 h-5" />,
+    name: "Profile",
+    path: "profile",
+    element: <AdminProfile />,
+    icon: <User className="w-5 h-5" />,
+  },
+  {
+    name: "AdminManagement",
+    path: "adminManagement",
+    element: <AdminManagement />,
+    icon: <User className="w-5 h-5" />,
+  },
+  {
+    name: "Create Courier",
+    path: "create-courier",
+    element: <CreateCourier />,
+    icon: <Plus className="w-5 h-5" />,
+  },
+  {
+    name: "Courier",
+    path: "courier",
+    element: <Courier />,
+    icon: <Truck className="w-5 h-5" />,
   },
 ];

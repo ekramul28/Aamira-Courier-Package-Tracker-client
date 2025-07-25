@@ -7,6 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useGetAllCouriersQuery } from "@/redux/features/courier/courierApi";
 
 export const packageStatusOptions = [
   { label: "Created", value: "CREATED" },
@@ -22,6 +30,7 @@ export const packageFormSchema = z.object({
   orderer_name: z.string().min(1, "Orderer name is required"),
   home_address: z.string().min(1, "Home address is required"),
   phone_number: z.string().min(1, "Phone number is required"),
+  courier_id: z.string().min(1, "Please select a courier"),
 });
 
 export type PackageStatus =
@@ -58,12 +67,18 @@ export const PackageForm: React.FC<PackageFormProps> = ({
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
+    watch,
   } = useForm<IPackageFormValues>({
     resolver: zodResolver(packageFormSchema),
     defaultValues: {
       ...initialValues,
     },
   });
+
+  const { data: couriersData, isLoading: isCouriersLoading } =
+    useGetAllCouriersQuery([]);
+  const couriers = couriersData?.data || [];
 
   return (
     <motion.div
@@ -101,7 +116,7 @@ export const PackageForm: React.FC<PackageFormProps> = ({
               <Label htmlFor="phone_number">Phone Number</Label>
               <Input
                 id="phone_number"
-                type="phone_number"
+                type="tel"
                 {...register("phone_number")}
               />
               {errors.phone_number && (
@@ -110,7 +125,44 @@ export const PackageForm: React.FC<PackageFormProps> = ({
                 </span>
               )}
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <div>
+              <Label htmlFor="courier_id">Assign Courier</Label>
+              <Select
+                value={watch("courier_id")}
+                onValueChange={(value) => setValue("courier_id", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a courier" />
+                </SelectTrigger>
+                <SelectContent>
+                  {isCouriersLoading ? (
+                    <SelectItem value="loading" disabled>
+                      Loading couriers...
+                    </SelectItem>
+                  ) : couriers.length > 0 ? (
+                    couriers?.map((courier) => (
+                      <SelectItem key={courier._id} value={courier._id}>
+                        {courier.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-couriers" disabled>
+                      No couriers available
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              {errors.courier_id && (
+                <span className="text-red-500 text-xs">
+                  {errors.courier_id.message}
+                </span>
+              )}
+            </div>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading || isCouriersLoading}
+            >
               {isLoading ? "Submitting..." : submitLabel}
             </Button>
           </form>
