@@ -11,11 +11,9 @@ import RegisterForm from "@/pages/Register";
 import { routeGenerator } from "@/utils/routesGenerator";
 import { createBrowserRouter } from "react-router-dom";
 import { adminPaths } from "./admin.routes";
-import { studentPaths } from "./student.routes";
-
 import { NotFoundPage } from "@/pages/NotFound";
 
-import { facultyPaths } from "./faculty.routes";
+import { courierPaths } from "./courier.routes";
 import Home from "@/pages/Home/Home";
 
 const router = createBrowserRouter([
@@ -60,31 +58,18 @@ const router = createBrowserRouter([
       { path: "*", element: <NotFoundPage /> },
     ],
   },
+
   {
-    path: "/student",
+    path: "/courier",
     element: (
-      <ProtectedRoute role="student">
+      <ProtectedRoute role="courier">
         <ThemeProvider>
           <DashboardLayout />
         </ThemeProvider>
       </ProtectedRoute>
     ),
     children: [
-      ...routeGenerator(studentPaths),
-      { path: "*", element: <NotFoundPage /> },
-    ],
-  },
-  {
-    path: "/faculty",
-    element: (
-      <ProtectedRoute role="faculty">
-        <ThemeProvider>
-          <DashboardLayout />
-        </ThemeProvider>
-      </ProtectedRoute>
-    ),
-    children: [
-      ...routeGenerator(facultyPaths),
+      ...routeGenerator(courierPaths),
       { path: "*", element: <NotFoundPage /> },
     ],
   },

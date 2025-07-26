@@ -1,7 +1,6 @@
 import AdminManagement from "@/pages/Admin/AdminManagement";
 import AdminProfile from "@/pages/Admin/AdminProfile";
 
-import Courier from "@/pages/courier/Courier";
 import CreateCourier from "@/pages/CreateCourier/CreateCourier";
 import RegisterPackage from "@/pages/RegisterPackage/RegisterPackage";
 import { Package, Plus, Truck, User } from "lucide-react";
@@ -30,11 +29,5 @@ export const adminPaths = [
     path: "create-courier",
     element: <CreateCourier />,
     icon: <Plus className="w-5 h-5" />,
-  },
-  {
-    name: "Courier",
-    path: "courier",
-    element: <Courier />,
-    icon: <Truck className="w-5 h-5" />,
   },
 ];

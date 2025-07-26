@@ -24,12 +24,10 @@ const getNavLinks = (role?: string) => {
         { label: "My Courses", to: "/student/my-courses" },
         { label: "Grades", to: "/student/grades" },
       ];
-    case "faculty":
+    case "courier":
       return [
         ...commonLinks,
-        { label: "Dashboard", to: "/faculty/dashboard" },
-        { label: "My Classes", to: "/faculty/classes" },
-        { label: "Grade Management", to: "/faculty/grades" },
+        { label: "Dashboard", to: "/courier/deliveries" },
       ];
     case "admin":
     case "superAdmin":
