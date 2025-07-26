@@ -18,8 +18,8 @@ export function getAuthToken() {
 }
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: "http://localhost:5000/api/v1",
-  // baseUrl: "https://academic-management-one.vercel.app/api/v1",
+  // baseUrl: "http://localhost:5000/api/v1",
+  baseUrl: "https://aamira-courier-package-tracker-serv.vercel.app/api/v1",
   credentials: "include",
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth.token;
@@ -51,8 +51,8 @@ const baseQueryWithRefreshToken: BaseQueryFn<
     console.log("Sending refresh token");
 
     const res = await fetch(
-      // "https://academic-management-one.vercel.app/api/v1/auth/refresh-token",
-      "http://localhost:5000/api/v1/auth/refresh-token",
+      "https://aamira-courier-package-tracker-serv.vercel.app/api/v1",
+      // "http://localhost:5000/api/v1/auth/refresh-token",
       {
         method: "POST",
         credentials: "include",

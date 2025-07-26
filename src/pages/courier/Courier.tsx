@@ -38,7 +38,6 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Tooltip,
@@ -158,6 +157,7 @@ const CourierDashboard: React.FC = () => {
   }, []);
 
   const handleLocationUpdate = (lat: number, lon: number) => {
+    console.log(lat, lon);
     setCurrentLat(lat);
     setCurrentLon(lon);
   };
@@ -207,14 +207,15 @@ const CourierDashboard: React.FC = () => {
     if (!eta) return;
 
     const updateData = {
-      status: "ACCEPTED",
+      status: "PICKED_UP",
       eta,
       lat: currentLat,
       lon: currentLon,
       eventTimestamp: new Date().toISOString(),
     };
 
-    await updatePackageStatus(pkg, updateData);
+    const result = await updatePackageStatus(pkg, updateData);
+    console.log("this is the result", result);
     setEta("");
     setSelectedPackage(null);
   };
@@ -223,7 +224,7 @@ const CourierDashboard: React.FC = () => {
     switch (status) {
       case "CREATED":
         return "secondary";
-      case "ACCEPTED":
+      case "PICKED_UP":
         return "default";
       case "IN_TRANSIT":
         return "outline";
@@ -242,7 +243,7 @@ const CourierDashboard: React.FC = () => {
     switch (status) {
       case "CREATED":
         return <Package className="h-4 w-4" />;
-      case "ACCEPTED":
+      case "PICKED_UP":
         return <Truck className="h-4 w-4" />;
       case "IN_TRANSIT":
         return <Truck className="h-4 w-4" />;
@@ -473,98 +474,100 @@ const CourierDashboard: React.FC = () => {
 
         <TabsContent value="completed">
           <div className="grid gap-6">
-            {courierPackages
-              .filter((pkg) => pkg.status === "DELIVERED")
-              .map((pkg) => (
-                <Card key={pkg._id}>
-                  <CardHeader className="flex flex-row justify-between items-start">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                        {pkg.packageId}
-                      </CardTitle>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="default">DELIVERED</Badge>
-                        <span className="text-sm text-muted-foreground">
-                          {format(
-                            new Date(pkg.receivedAt || pkg.updatedAt),
-                            "PPpp"
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {Array.isArray(courierPackages) &&
+              courierPackages
+                .filter((pkg: any) => pkg.status === "DELIVERED")
+                .map((pkg: any) => (
+                  <Card key={pkg._id}>
+                    <CardHeader className="flex flex-row justify-between items-start">
                       <div>
-                        <h4 className="font-medium mb-2">Recipient</h4>
-                        <p>{pkg.orderer_name}</p>
+                        <CardTitle className="flex items-center gap-2">
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                          {pkg.packageId}
+                        </CardTitle>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant="default">DELIVERED</Badge>
+                          <span className="text-sm text-muted-foreground">
+                            {format(
+                              new Date(pkg.receivedAt || pkg.updatedAt),
+                              "PPpp"
+                            )}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-medium mb-2">Delivery Address</h4>
-                        <p>{pkg.home_address}</p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                          <h4 className="font-medium mb-2">Recipient</h4>
+                          <p>{pkg.orderer_name}</p>
+                        </div>
+                        <div>
+                          <h4 className="font-medium mb-2">Delivery Address</h4>
+                          <p>{pkg.home_address}</p>
+                        </div>
+                        <div>
+                          <h4 className="font-medium mb-2">Completion Time</h4>
+                          <p>
+                            {format(
+                              new Date(pkg.receivedAt || pkg.updatedAt),
+                              "PPpp"
+                            )}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-medium mb-2">Completion Time</h4>
-                        <p>
-                          {format(
-                            new Date(pkg.receivedAt || pkg.updatedAt),
-                            "PPpp"
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
           </div>
         </TabsContent>
       </Tabs>
 
-      {courierPackages.some((pkg) => pkg.status !== "CREATED") && (
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Live Location Tracking
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <LiveLocationTracker
-                socket={socket}
-                onLocationUpdate={handleLocationUpdate}
-              />
+      {Array.isArray(courierPackages) &&
+        courierPackages.some((pkg: any) => pkg.status !== "CREATED") && (
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Live Location Tracking
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <LiveLocationTracker
+                  socket={socket}
+                  onLocationUpdate={handleLocationUpdate}
+                />
 
-              <div className="space-y-4">
-                <div>
-                  <Label>Current Location Description</Label>
-                  <Input
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="E.g., Near Central Park, 5th Avenue"
-                    className="mt-1"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div>
-                    <Label>Latitude</Label>
-                    <div className="mt-1 p-2 rounded-md border font-mono">
-                      {currentLat.toFixed(6)}
-                    </div>
+                    <Label>Current Location Description</Label>
+                    <Input
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="E.g., Near Central Park, 5th Avenue"
+                      className="mt-1"
+                    />
                   </div>
-                  <div>
-                    <Label>Longitude</Label>
-                    <div className="mt-1 p-2 rounded-md border font-mono">
-                      {currentLon.toFixed(6)}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Latitude</Label>
+                      <div className="mt-1 p-2 rounded-md border font-mono">
+                        {currentLat.toFixed(6)}
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Longitude</Label>
+                      <div className="mt-1 p-2 rounded-md border font-mono">
+                        {currentLon.toFixed(6)}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
     </div>
   );
 };

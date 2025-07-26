@@ -116,34 +116,25 @@ export default function LoginForm() {
                   type="button"
                   variant="outline"
                   onClick={() =>
-                    onSubmit({ email: "A-0001", password: "Admin@123" })
-                  }
-                >
-                  Login as Admin
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
                     onSubmit({
                       email: "superAdmin@gmail.com",
                       password: "admin12345",
                     })
                   }
                 >
-                  Login as Student
+                  Login as dispatcher
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() =>
                     onSubmit({
-                      email: "mdekramulhassan168@gmail.com",
+                      email: "ekramulhassan80@gmail.com",
                       password: "123456",
                     })
                   }
                 >
-                  Login as customer
+                  Login as courier
                 </Button>
               </div>
             </div>
