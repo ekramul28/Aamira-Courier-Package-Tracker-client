@@ -1,8 +1,9 @@
 // src/redux/api/courierApi.ts
 
 import { baseApi } from "@/redux/api/baseApi";
+import type { TCourier } from "@/types/courier";
 import type { TResponseRedux, TQueryParam } from "@/types/global";
-import type { TCourier } from "@/types/courier"; // Create this interface as needed
+// import type { TCourier } from "@/types/courier"; // Create this interface as needed
 
 export const courierApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -27,13 +28,21 @@ export const courierApi = baseApi.injectEndpoints({
           params: params,
         };
       },
-      providesTags: ["courier"],
+      providesTags: ["packages"],
       transformResponse: (response: TResponseRedux<TCourier[]>) => ({
-        data: response.data,
+        data: response.data ?? [],
         meta: response.meta,
       }),
     }),
 
+    getCourierPackageById: builder.query<TResponseRedux<TCourier>, string>({
+      query: (id) => ({
+        url: `/couriers/packages/${id}`,
+        method: "GET",
+      }),
+      providesTags: ["courier"],
+      transformResponse: (response: TResponseRedux<TCourier>) => response,
+    }),
     // Get Single Courier
     getSingleCourier: builder.query<TResponseRedux<TCourier>, string>({
       query: (id) => ({
@@ -86,6 +95,7 @@ export const courierApi = baseApi.injectEndpoints({
 
 export const {
   useGetAllCouriersQuery,
+  useGetCourierPackageByIdQuery,
   useGetSingleCourierQuery,
   useCreateCourierMutation,
   useUpdateCourierMutation,

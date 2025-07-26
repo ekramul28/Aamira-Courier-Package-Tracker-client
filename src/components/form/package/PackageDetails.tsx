@@ -40,7 +40,7 @@ export default function PackageDetails({
   }
 
   const statusToColor = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case "pending":
         return "bg-yellow-100 text-yellow-700";
       case "in_transit":

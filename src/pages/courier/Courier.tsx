@@ -1,3 +1,4 @@
+import { useGetCourierPackageByIdQuery } from "@/redux/features/courier/courierApi";
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { io, Socket } from "socket.io-client";
@@ -51,6 +52,11 @@ const Courier: React.FC = () => {
   const [connected, setConnected] = useState(false);
   const dispatch = useDispatch();
   const [socket, setSocket] = useState<Socket | null>(null);
+  const { data: getPackage } = useGetCourierPackageByIdQuery(
+    "64c181656979656969696969"
+  );
+  const courier = getPackage?.data;
+  console.log(courier);
 
   useEffect(() => {
     const sock = io(SOCKET_URL);

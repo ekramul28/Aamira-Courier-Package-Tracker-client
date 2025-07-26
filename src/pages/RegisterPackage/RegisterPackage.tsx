@@ -98,7 +98,6 @@ export default function RegisterPackage() {
       socket.emit("package_registered", result);
       setSelectedPackage(result);
       setShowAddModal(false);
-      setMode("details");
     } catch {
       toast.error("Failed to register package");
     }
@@ -265,12 +264,12 @@ export default function RegisterPackage() {
                   <TableRow>
                     <TableCell colSpan={15}>Loading...</TableCell>
                   </TableRow>
-                ) : packages.length === 0 ? (
+                ) : packages?.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={15}>No packages found.</TableCell>
                   </TableRow>
                 ) : (
-                  packages.map((pkg) => (
+                  packages?.map((pkg) => (
                     <TableRow
                       key={pkg.id || pkg._id}
                       className="hover:bg-muted"
